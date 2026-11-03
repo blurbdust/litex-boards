@@ -133,6 +133,7 @@ python3 .github/scripts/generate_board_inventory.py --write
 | `machdyne_vivaldi_ml1` | machdyne_vivaldi_ml1 | trellis | `48000000.0` | Ethernet, SDCard, SPI SDCard, USB Host | included |
 | `micronova_mercury2` | micronova_mercury2 | vivado | `50000000.0` | - | included |
 | `microphase_a7_lite` | microphase_a7_lite | vivado | `100000000.0` | Ethernet, SDCard, SPI SDCard, SPI Flash | included |
+| `microsoft_a2020` | microsoft_a2020 | quartus | `100000000.0` | PCIe | toolchain-gated: Requires Quartus Prime Pro (Qsys IP generation) and Stratix10PLL. |
 | `microsoft_catapult_v3` | microsoft_catapult_v3 | quartus | `100000000.0` | - | included |
 | `microsoft_storey_peak` | microsoft_storey_peak | quartus | `100000000.0` | - | included |
 | `mist` | mist | quartus | `50000000.0` | Video Terminal | included |

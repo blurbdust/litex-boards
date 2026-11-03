@@ -174,6 +174,10 @@ TARGET_EXCLUSIONS = {
         "category": "external_toolchain",
         "reason": "Require Efinity toolchain.",
     },
+    "microsoft_a2020": {
+        "category": "external_toolchain",
+        "reason": "Requires Quartus Prime Pro (Qsys IP generation) and Stratix10PLL.",
+    },
 }
 
 

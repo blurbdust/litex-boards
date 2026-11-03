@@ -36,7 +36,6 @@ from litex.gen import *
 
 from litex.build.generic_platform import Pins, Subsignal
 
-from litex.soc.cores.clock.intel_stratix10 import Stratix10PLL
 from litex.soc.integration.soc import *
 from litex.soc.integration.builder import *
 from litex.soc.cores.led import LedChaser
@@ -267,6 +266,8 @@ class _CRG(LiteXModule):
         # speedgrade matches the E2 suffix of the 1SG280LN2F43E2VG device string.
         # ninit_done gates the PLL rather than cd_sys directly: create_clkout drives cd_sys reset
         # from ~locked, so holding the PLL in reset holds every domain it feeds.
+        # Imported here rather than at module scope: Stratix10PLL is not in upstream LiteX yet.
+        from litex.soc.cores.clock.intel_stratix10 import Stratix10PLL
         self.pll = pll = Stratix10PLL(platform, speedgrade="-2")
         self.comb += pll.reset.eq(self.rst | self.reset_release.ninit_done)
         pll.register_clkin(clk100, 100e6)
