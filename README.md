@@ -220,6 +220,7 @@ Some of the supported boards, see yours? Give LiteX-Boards a try!
     ├── machdyne_vivaldi_ml1
     ├── micronova_mercury2
     ├── microphase_a7_lite
+    ├── microsoft_a2020
     ├── microsoft_catapult_v3
     ├── microsoft_storey_peak
     ├── mist
