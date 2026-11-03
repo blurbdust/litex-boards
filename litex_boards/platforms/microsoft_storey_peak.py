@@ -129,10 +129,10 @@ _io = [
 
 # 9x SK Hynix H5TC4G83BFR (4 Gb x8) => 72 DQ = 64 data + 8 ECC, 4 GiB addressable.
 #
-# No target drives these pins yet. Transcribed from the reference design's QSF, where they appear as
-# `memory_mem_*`, the conduit of an Altera UniPHY `altera_mem_if_ddr3_emif`. The terminations are
-# what that IP's `*_p0_pin_assignments.tcl` emits at fit time, so the script does not have to be
-# injected mid-flow. Byte lanes are one per line, DQ group 0 first; group 8 is the ECC device.
+# Transcribed from the reference design's QSF, where they appear as `memory_mem_*`, the conduit of
+# an Altera UniPHY `altera_mem_if_ddr3_emif`. The terminations are what that IP's
+# `*_p0_pin_assignments.tcl` emits at fit time. Byte lanes are one per line, DQ group 0 first;
+# group 8 is the ECC device.
 
 _ddram_dq = [
     "R32 P32 M33 T31 N34 P34 L34 L33",
@@ -185,6 +185,38 @@ _io += [
     _ddram_io("ddram_ecc", 9),  # 72-bit, 64 data + 8 ECC.
 ]
 
+# DDR3L Configuration ------------------------------------------------------------------------------
+
+# UniPHY DDR3 controller parameters (litex.soc.cores.ram.altera_uniphy_ddr3). The chips are marked
+# H5TC4G83BFR-PBA (https://j-marjanovic.io/stratix-v-accelerator-card-from-ebay-part-5.html): DDR3L,
+# speed code PB = DDR3-1600 11-11-11. Core timings are the JEDEC DDR3-1600K values of a 4 Gb x8
+# device, drive strength and terminations the ones of the reference design's controller, which ran
+# this memory at 800 MHz.
+ddr_clk_freq = 800e6
+ddr_config   = {
+    "MEM_VENDOR"         : "Hynix",
+    "MEM_VOLTAGE"        : "1.35V DDR3L",
+    "MEM_COL_ADDR_WIDTH" : 10,
+    "MEM_CLK_FREQ_MAX"   : 800.0,
+    "MEM_TCL"            : 11,
+    "MEM_WTCL"           : 8,
+    "MEM_TINIT_US"       : 500,
+    "MEM_TMRD_CK"        : 4,
+    "MEM_TRAS_NS"        : 35.0,
+    "MEM_TRCD_NS"        : 13.75,
+    "MEM_TRP_NS"         : 13.75,
+    "MEM_TREFI_US"       : 7.8,
+    "MEM_TRFC_NS"        : 260.0,
+    "MEM_TWR_NS"         : 15.0,
+    "MEM_TWTR"           : 6,
+    "MEM_TFAW_NS"        : 30.0,
+    "MEM_TRRD_NS"        : 6.0,
+    "MEM_TRTP_NS"        : 7.5,
+    "MEM_DRV_STR"        : "RZQ/6",
+    "MEM_RTT_NOM"        : "RZQ/4",
+    "MEM_RTT_WR"         : "RZQ/2",
+}
+
 # Platform -----------------------------------------------------------------------------------------
 
 class Platform(AlteraPlatform):
@@ -193,6 +225,9 @@ class Platform(AlteraPlatform):
 
     def __init__(self, toolchain="quartus"):
         AlteraPlatform.__init__(self, "5SGSMD5K1F40C1", _io, toolchain=toolchain)
+        self.ddr_clk_freq = ddr_clk_freq
+        self.ddr_config   = ddr_config
+        self.ddr_size     = 0x4000_0000 # 1GB mapped (of 4GB).
 
         # Safety: this is a board we have no schematic for, so never drive unused pins. This is a
         # deliberate choice rather than something transcribed from the reference design (which
