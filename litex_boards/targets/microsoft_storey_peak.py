@@ -11,8 +11,8 @@
 # There is no hardware UART on this board, so as with Catapult v3 the console falls back to
 # jtag_uart, or to crossover when jtagbone is enabled.
 #
-# The DDR3, PCIe and QSFP+ pins are declared in the platform file but are not driven here. This
-# target is the hardware-verified bring-up SoC only.
+# The DDR3L is main RAM, through Intel's UniPHY controller (Quartus generates it at build time). The
+# PCIe and QSFP+ pins are declared in the platform file but are not driven here.
 
 from migen import *
 
@@ -25,6 +25,7 @@ from litex.soc.integration.soc import *
 from litex.soc.integration.builder import *
 from litex.soc.cores.led import LedChaser
 from litex.soc.cores.bitbang import I2CMaster
+from litex.soc.cores.ram.altera_uniphy_ddr3 import AlteraUniPHYDDR3, add_altera_uniphy_ddr3
 
 # CRG ----------------------------------------------------------------------------------------------
 
@@ -78,6 +79,21 @@ class BaseSoC(SoCCore):
             "create_clock -name altera_reserved_tck -period 100.000 [get_ports {altera_reserved_tck}]",
             "set_clock_groups -asynchronous -group {altera_reserved_tck}",
         ]
+
+        # DDR3L SDRAM ------------------------------------------------------------------------------
+        # 72-bit (64-bit + ECC), from clk125 (in the DDR3 bank). The controller runs on its own clock
+        # (200 MHz AFI clock at 800 MHz, quarter rate), asynchronous to sys.
+        if not self.integrated_main_ram_size:
+            self.ddr3 = AlteraUniPHYDDR3(platform,
+                pads         = platform.request("ddram_ecc"),
+                rzq_pad      = platform.request("ddram_oct"),
+                refclk       = platform.lookup_request("clk125"),
+                refclk_freq  = 125e6,
+                mem_clk_freq = platform.ddr_clk_freq,
+                ecc          = True,
+                config       = platform.ddr_config,
+            )
+            add_altera_uniphy_ddr3(self, self.ddr3, size=platform.ddr_size)
 
         # JTAGBone ---------------------------------------------------------------------------------
         if kwargs.get("with_jtagbone", False):
