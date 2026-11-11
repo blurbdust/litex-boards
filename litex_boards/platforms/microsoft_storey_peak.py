@@ -13,11 +13,13 @@
 # is inferred.
 #
 # Verified on hardware:
-#   clk125, user_led 0-7 (active high), i2c 0/1/2, pcie_x8 0.
+#   clk125, user_led 0-7 (active high), i2c 0/1/2, pcie_x8 0, qsfp_refclk (the transmit PLLs and
+#   CDRs of qsfp 0 lock to it at 644.537 MHz against clk125, and PRBS31 runs error-free through
+#   their internal serial loopback at 10.3125 Gb/s).
 # Not verified:
-#   ddram, ddram_oct, qsfp 0/1, qsfp_refclk, pcie_x8 1.
+#   ddram, ddram_oct, qsfp 0/1 lane pins, pcie_x8 1.
 #   The qsfp lane assignments are the weakest data here: they are commented out in the reference
-#   design, so that design never exercised them.
+#   QSF, and internal loopback does not reach the pins.
 # Known bad:
 #   i2c 3, see the note at its declaration.
 #
