@@ -63,9 +63,13 @@ class _CRG(LiteXModule):
         pll.register_clkin(clk125, 125e6)
         pll.create_clkout(self.cd_sys, sys_clk_freq)
 
+        # With one output, derive_pll_clocks names the sys clock after the PLL port
+        # (altpll:ALTPLL|altpll_<hash>:auto_generated|clk[0]), not after the sys_clk net. `?` stands
+        # for the brackets, which Quartus patterns treat as a character class.
+        self.sys_clk_sdc = "{altpll:ALTPLL|*|clk?0?}"
         platform.toolchain.additional_sdc_commands += [
-            "set_false_path -from [get_clocks sys_clk] -to [get_clocks clk125]",
-            "set_false_path -from [get_clocks clk125] -to [get_clocks sys_clk]",
+            f"set_false_path -from [get_clocks {self.sys_clk_sdc}] -to [get_clocks clk125]",
+            f"set_false_path -from [get_clocks clk125] -to [get_clocks {self.sys_clk_sdc}]",
         ]
 
 # I2C Pins -----------------------------------------------------------------------------------------
@@ -123,7 +127,7 @@ class QSFPTestSoC(SoCMini):
 
         # JTAG Link --------------------------------------------------------------------------------
         self.jtaglink = JTAGLink(platform, csr_base=self.mem_map.get("csr", 0))
-        self.jtaglink.add_timing_constraints(platform)
+        self.jtaglink.add_timing_constraints(platform, sys_clk_name=self.crg.sys_clk_sdc)
         self.bus.add_master(name="jtaglink", master=self.jtaglink.bus)
 
         # QSFP Transceivers ------------------------------------------------------------------------
@@ -143,7 +147,7 @@ class QSFPTestSoC(SoCMini):
             pll_type     = pll_type,
         )
         self.qsfp.add_controls()
-        self.qsfp.add_timing_constraints(platform, refclk, QSFP_REFCLK_FREQ)
+        self.qsfp.add_timing_constraints(platform, refclk, QSFP_REFCLK_FREQ, sys_clk=self.crg.sys_clk_sdc)
 
         # I2C: clock generator, cage 0, cage 1 -----------------------------------------------------
         self.i2c_idt   = I2CPins(platform.request("i2c", 0))
