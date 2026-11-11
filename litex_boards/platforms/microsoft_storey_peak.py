@@ -61,7 +61,10 @@ _io = [
         Subsignal("scl", Pins("AB24")),
         Subsignal("sda", Pins("AC24")),
         IOStandard("2.5 V")
-    ), # QSFP0 module.
+    ), # QSFP0 module (SFF-8636, EEPROM at 0x50). The reference design's author read a cable's EEPROM
+       # here on a Pikes Peak. wirebond/catapult_v2_pikes_peak lists these pins with SCL and SDA
+       # swapped. No QSFP sideband pin (ModPrsL, ResetL, LPMode, ModSelL, IntL) is known to reach the
+       # FPGA in any public source.
     ("i2c", 2,
         Subsignal("scl", Pins("AA25")),
         Subsignal("sda", Pins("AB25")),
@@ -108,9 +111,12 @@ _io = [
         Subsignal("clk_p",   Pins("AF34"), IOStandard("HCSL")),
     ),
 
-    # QSFP+: 2 cages, 4 lanes each.
-    # Weakest provenance in this file: every QSFP transceiver line is commented out in the reference
-    # QSF, so that design never exercised them. Transcribed but unused, not hardware-proven.
+    # QSFP+: 2 cages, 4 lanes each, on right-side transceiver channels GXB_R10-R13 (cage 0: bank R1
+    # channels 4-5, bank R2 channels 0-1) and GXB_R14-R17 (cage 1: bank R2 channels 2-5). The
+    # reference QSF has them commented out, but its history drives cage 0 from Intel's 40G Ethernet
+    # IP (commit eb6a54f), which its author ran at 40 Gb/s against an Intel X710 on a Pikes Peak.
+    # occamlab's Pikes Peak notes give the same channels for the TX lanes of both cages. Not yet run
+    # on a Storey Peak through the pins; lane order and polarity within a cage are not established.
     ("qsfp", 0,
         # rx_n: V1 T1 P1 M1
         Subsignal("rx_p", Pins("V2 T2 P2 M2"), IOStandard("1.5-V PCML")),
@@ -124,7 +130,9 @@ _io = [
         Subsignal("tx_p", Pins("J4 G4 E4 C4"), IOStandard("1.5-V PCML")),
     ),
 
-    # QSFP transceiver reference clock. LVDS, 1.551 ns period in the reference SDC => 644.53 MHz.
+    # QSFP transceiver reference clock, REFCLK 5 of the right side (bank R2). LVDS, 1.551 ns period in
+    # the reference SDC => 644.53125 MHz, from the IDT8N4Q001 on i2c 0 (address 0x6e), whose factory
+    # configuration gives 644.53125 MHz on every frequency select, so it needs no programming.
     # clk_n: T6. This assignment is NOT commented out in the reference QSF.
     ("qsfp_refclk", 0, Pins("T7"), IOStandard("LVDS")),
 ]
@@ -262,8 +270,13 @@ class Platform(AlteraPlatform):
     default_clk_name   = "clk125"
     default_clk_period = 1e9/125e6
 
-    def __init__(self, toolchain="quartus"):
-        AlteraPlatform.__init__(self, "5SGSMD5K1F40C1", _io, toolchain=toolchain)
+    # The marking 5SGSKF40I3LNAC reads as 5SGSMD5K2F40I3L (transceiver grade 2, industrial, core
+    # grade 3, 0.85 V core), which Quartus also accepts and which bitstreams for the C1 grade load on.
+    devices = ["5SGSMD5K1F40C1", "5SGSMD5K2F40I3L"]
+
+    def __init__(self, device="5SGSMD5K1F40C1", toolchain="quartus"):
+        assert device in self.devices
+        AlteraPlatform.__init__(self, device, _io, toolchain=toolchain)
 
         # Safety: this is a board we have no schematic for, so never drive unused pins. This is a
         # deliberate choice rather than something transcribed from the reference design (which
